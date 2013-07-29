@@ -42,19 +42,12 @@ LOCAL_SRC_FILES := \
 	pixman-utils.c
 
 ifeq ($(strip $(TARGET_ARCH)),arm)
-	ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
-		LOCAL_CFLAGS += -DUSE_ARM_NEON
-		LOCAL_SRC_FILES += \
-			pixman-arm-neon.c \
-			pixman-arm-neon-asm.S \
-			pixman-arm-neon-asm-bilinear.S
-	else
-		LOCAL_CFLAGS += -DUSE_ARM_SIMD
-		LOCAL_SRC_FILES += \
-			pixman-arm-simd.c \
-			pixman-arm-simd-asm.S \
-			pixman-arm-simd-asm-scaled.S
-	endif
+	# Will only be used if runtime detection reports NEON capabilities
+	LOCAL_CFLAGS += -DUSE_ARM_NEON
+	LOCAL_SRC_FILES += \
+		pixman-arm-neon.c \
+		pixman-arm-neon-asm.S \
+		pixman-arm-neon-asm-bilinear.S
 endif
 
 LOCAL_STATIC_LIBRARIES := cpufeatures

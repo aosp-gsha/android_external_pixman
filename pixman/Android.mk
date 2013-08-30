@@ -41,6 +41,10 @@ LOCAL_SRC_FILES := \
 	pixman-trap.c \
 	pixman-utils.c
 
+# Android additions
+LOCAL_SRC_FILES += \
+	pixman-android.c
+
 ifeq ($(strip $(TARGET_ARCH)),arm)
 	# Will only be used if runtime detection reports NEON capabilities
 	LOCAL_CFLAGS += -DUSE_ARM_NEON

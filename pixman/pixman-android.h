@@ -28,6 +28,6 @@ struct _android_simple_image {
 };
 
 void android_bilinear_filter(android_simple_image* src_image,
-        android_simple_image* dst_image, float scale);
+        android_simple_image* dst_image, float scale, int src_x, int src_y);
 
 #endif /* PIXMAN_ANDROID_H_ */

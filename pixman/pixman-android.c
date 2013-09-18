@@ -153,8 +153,8 @@ static force_inline void bilinear_pad_repeat_get_scanline_bounds(
     *width -= *left_pad + *left_tz + *right_tz + *right_pad;
 }
 
-void android_bilinear_filter(android_simple_image* src_image,
-        android_simple_image* dst_image, float scale) {
+PIXMAN_EXPORT void android_bilinear_filter(android_simple_image* src_image,
+        android_simple_image* dst_image, float scale, int src_x, int src_y) {
     int32_t src_width = src_image->width;
     int32_t src_height = src_image->height;
     pixman_fixed_t fixed_scale = pixman_double_to_fixed(scale);
@@ -162,32 +162,24 @@ void android_bilinear_filter(android_simple_image* src_image,
     pixman_transform_init_scale(&transform, fixed_scale, fixed_scale);
     pixman_vector_t v;
     int32_t left_pad, left_tz, right_tz, right_pad;
-    int32_t src_x = 0;
-    int32_t src_y = 0;
     pixman_fixed_t unit_x, unit_y;
     int32_t width = dst_image->width;
     int32_t height = dst_image->height;
     uint32_t dst_line = 0;
-    uint32_t* src_first_line;
-    int32_t dest_y = 0;
-    int32_t dest_x = 0;
     uint32_t* dst;
     int y1, y2;
     pixman_fixed_t vx, vy;
-    uint32_t solid_mask;
-    const uint32_t* mask = &solid_mask;
-    v.vector[0] = ((pixman_fixed_t) (((src_x) << 16)))
-            + (((pixman_fixed_t) (((1) << 16)))) / 2;
-    v.vector[1] = ((pixman_fixed_t) (((src_y) << 16)))
-            + (((pixman_fixed_t) (((1) << 16)))) / 2;
-    v.vector[2] = (((pixman_fixed_t) (((1) << 16))));
+    /* reference point is the center of the pixel */
+    v.vector[0] = pixman_int_to_fixed (src_x) + pixman_fixed_1 / 2;
+    v.vector[1] = pixman_int_to_fixed (src_y) + pixman_fixed_1 / 2;
+    v.vector[2] = pixman_fixed_1;
     if (!pixman_transform_point_3d(&transform, &v)) {
         return;
     }
     unit_x = transform.matrix[0][0];
     unit_y = transform.matrix[1][1];
-    v.vector[0] -= (((pixman_fixed_t) (((1) << 16)))) / 2;
-    v.vector[1] -= (((pixman_fixed_t) (((1) << 16)))) / 2;
+    v.vector[0] -= pixman_fixed_1 / 2;
+    v.vector[1] -= pixman_fixed_1 / 2;
     vy = v.vector[1];
     bilinear_pad_repeat_get_scanline_bounds(src_width, v.vector[0], unit_x,
             &left_pad, &left_tz, &width, &right_tz, &right_pad);
@@ -197,20 +189,23 @@ void android_bilinear_filter(android_simple_image* src_image,
         dst_image->get_scanline(dst_image, (void**)(&dst), dst_line);
         dst_line++;
         vx = v.vector[0];
-        y1 = ((int) (((vy) >> 16)));
+        y1 = pixman_fixed_to_int(vy);
         weight2 = pixman_fixed_to_bilinear_weight(vy);
         if (weight2) {
+            /* both weight1 and weight2 are smaller than BILINEAR_INTERPOLATION_RANGE */
             y2 = y1 + 1;
-            weight1 = (1 << 7) - weight2;
+            weight1 = BILINEAR_INTERPOLATION_RANGE - weight2;
         } else {
+            /* set both top and bottom row to the same scanline and tweak weights */
             y2 = y1;
-            weight1 = weight2 = (1 << 7) / 2;
+            weight1 = weight2 = BILINEAR_INTERPOLATION_RANGE / 2;
         }
         vy += unit_y;
         uint32_t buf1[2];
         uint32_t buf2[2];
         uint32_t* src1;
         uint32_t* src2;
+        /* handle top/bottom zero padding by just setting weights to 0 if needed */
         if (y1 < 0) {
             weight1 = 0;
             y1 = 0;
@@ -232,7 +227,7 @@ void android_bilinear_filter(android_simple_image* src_image,
         if (left_pad > 0) {
             buf1[0] = buf1[1] = 0;
             buf2[0] = buf2[1] = 0;
-            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, mask, buf1, buf2,
+            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, NULL, buf1, buf2,
                     left_pad, weight1, weight2, 0, 0, 0, 1);
             dst += left_pad;
         }
@@ -241,16 +236,14 @@ void android_bilinear_filter(android_simple_image* src_image,
             buf1[1] = src1[0];
             buf2[0] = 0;
             buf2[1] = src2[0];
-            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, mask, buf1, buf2,
+            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, NULL, buf1, buf2,
                     left_tz, weight1, weight2,
-                    ((vx)
-                            & ((((pixman_fixed_t) (((1) << 16))))
-                                    - ((pixman_fixed_t) (1)))), unit_x, 0, 0);
+                    pixman_fixed_frac(vx), unit_x, 0, 0);
             dst += left_tz;
             vx += left_tz * unit_x;
         }
         if (width > 0) {
-            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, mask, src1, src2,
+            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, NULL, src1, src2,
                     width, weight1, weight2, vx, unit_x, 0, 0);
             dst += width;
             vx += width * unit_x;
@@ -260,17 +253,15 @@ void android_bilinear_filter(android_simple_image* src_image,
             buf1[1] = 0;
             buf2[0] = src2[src_width - 1];
             buf2[1] = 0;
-            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, mask, buf1, buf2,
+            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, NULL, buf1, buf2,
                     right_tz, weight1, weight2,
-                    ((vx)
-                            & ((((pixman_fixed_t) (((1) << 16))))
-                                    - ((pixman_fixed_t) (1)))), unit_x, 0, 0);
+                    pixman_fixed_frac(vx), unit_x, 0, 0);
             dst += right_tz;
         }
         if (right_pad > 0) {
             buf1[0] = buf1[1] = 0;
             buf2[0] = buf2[1] = 0;
-            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, mask, buf1, buf2,
+            scaled_bilinear_scanline_neon_8888_8888_SRC(dst, NULL, buf1, buf2,
                     right_pad, weight1, weight2, 0, 0, 0, 1);
         }
     }

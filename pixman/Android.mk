@@ -6,7 +6,7 @@ LOCAL_SDK_VERSION := 14
 
 LOCAL_MODULE := libpixman
 
-LOCAL_CFLAGS := -DHAVE_CONFIG_H
+LOCAL_CFLAGS := -DHAVE_CONFIG_H -fvisibility=hidden
 
 # Core files
 LOCAL_SRC_FILES := \

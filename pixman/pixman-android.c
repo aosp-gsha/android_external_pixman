@@ -157,9 +157,6 @@ PIXMAN_EXPORT void android_bilinear_filter(android_simple_image* src_image,
         android_simple_image* dst_image, float scale, int src_x, int src_y) {
     int32_t src_width = src_image->width;
     int32_t src_height = src_image->height;
-    pixman_fixed_t fixed_scale = pixman_double_to_fixed(scale);
-    pixman_transform_t transform;
-    pixman_transform_init_scale(&transform, fixed_scale, fixed_scale);
     pixman_vector_t v;
     int32_t left_pad, left_tz, right_tz, right_pad;
     pixman_fixed_t unit_x, unit_y;
@@ -170,16 +167,10 @@ PIXMAN_EXPORT void android_bilinear_filter(android_simple_image* src_image,
     int y1, y2;
     pixman_fixed_t vx, vy;
     /* reference point is the center of the pixel */
-    v.vector[0] = pixman_int_to_fixed (src_x) + pixman_fixed_1 / 2;
-    v.vector[1] = pixman_int_to_fixed (src_y) + pixman_fixed_1 / 2;
+    v.vector[0] = pixman_double_to_fixed((src_x + 0.5f) * scale);
+    v.vector[1] = pixman_double_to_fixed((src_y + 0.5f) * scale);
     v.vector[2] = pixman_fixed_1;
-    if (!pixman_transform_point_3d(&transform, &v)) {
-        return;
-    }
-    unit_x = transform.matrix[0][0];
-    unit_y = transform.matrix[1][1];
-    v.vector[0] -= pixman_fixed_1 / 2;
-    v.vector[1] -= pixman_fixed_1 / 2;
+    unit_x = unit_y = pixman_double_to_fixed(scale);
     vy = v.vector[1];
     bilinear_pad_repeat_get_scanline_bounds(src_width, v.vector[0], unit_x,
             &left_pad, &left_tz, &width, &right_tz, &right_pad);

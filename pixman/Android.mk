@@ -2,6 +2,9 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+# pixman-android-neon.S uses gcc-specific directive.
+LOCAL_CLANG_ASFLAGS_arm += -no-integrated-as
+
 LOCAL_SDK_VERSION := 14
 
 LOCAL_MODULE := libpixman

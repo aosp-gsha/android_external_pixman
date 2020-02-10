@@ -27,7 +27,7 @@ ifeq ($(strip $(TARGET_ARCH)),arm)
 endif
 
 LOCAL_STATIC_LIBRARIES := cpufeatures
-
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/pixman.h
 include $(BUILD_STATIC_LIBRARY)
 
 $(call import-module,android/cpufeatures)

@@ -79,9 +79,9 @@
 static force_inline void scaled_nearest_scanline_8888_8888_none_SRC(
         uint32_t *dst, const uint32_t *src, int32_t w, pixman_fixed_t vx,
         pixman_fixed_t unit_x, pixman_fixed_t src_width_fixed) {
-    uint32_t d;
+    //uint32_t d;
     uint32_t s1, s2;
-    uint8_t a1, a2;
+    //uint8_t a1, a2;
     int x1, x2;
 
     while ((w -= 2) >= 0) {
@@ -99,13 +99,15 @@ static force_inline void scaled_nearest_scanline_8888_8888_none_SRC(
         s1 = *(src + x1);
         *dst++ = s1;
     }
+     src_width_fixed = pixman_int_to_fixed(w);
 }
 
+#if 0
 static force_inline int pixman_fixed_to_bilinear_weight(pixman_fixed_t x) {
     return (x >> (16 - BILINEAR_INTERPOLATION_BITS))
             & ((1 << BILINEAR_INTERPOLATION_BITS) - 1);
 }
-
+#endif
 /*
  * For each scanline fetched from source image with PAD repeat:
  * - calculate how many pixels need to be padded on the left side
@@ -146,7 +148,7 @@ static force_inline void pad_repeat_get_scanline_bounds(
         *width = (int32_t) tmp;
     }
 }
-
+#if 0
 static force_inline void bilinear_pad_repeat_get_scanline_bounds(
         int32_t source_image_width, pixman_fixed_t vx, pixman_fixed_t unit_x,
         int32_t * left_pad, int32_t * left_tz, int32_t * width,
@@ -165,7 +167,7 @@ static force_inline void bilinear_pad_repeat_get_scanline_bounds(
     *right_pad = right_pad1;
     *width -= *left_pad + *left_tz + *right_tz + *right_pad;
 }
-
+#endif
 #ifdef USE_ARM_NEON
 void pixman_scaled_bilinear_scanline_8888_8888_SRC_asm_neon(uint32_t *dst,
         const uint32_t *top, const uint32_t *bottom, int wt, int wb,
@@ -286,7 +288,7 @@ static void android_nearest_filter(android_simple_image* src_image,
     uint32_t dst_line = 0;
     int y;
     pixman_fixed_t src_width_fixed = pixman_int_to_fixed(src_width);
-    pixman_fixed_t max_vy;
+    //pixman_fixed_t max_vy;
     pixman_vector_t v;
     pixman_fixed_t vx, vy;
     pixman_fixed_t unit_x, unit_y;

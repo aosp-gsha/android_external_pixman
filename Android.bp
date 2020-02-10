@@ -1,0 +1,9 @@
+subdirs = [
+	"pixman",
+]
+cc_library_headers {
+	name: "pixman_inc",
+	export_include_dirs: [ "pixman" ]
+}
+
+
